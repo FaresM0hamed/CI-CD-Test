@@ -22,55 +22,27 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Decode and recreate google-services.json
-        run: |
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > app/google-services.json
-
-      - name: Create secrets.properties file
-        run: |
-          echo "API_KEY=\"${{ secrets.API_KEY }}\"" > app/secrets.properties
-
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
-
-      - name: Set environment variables for signing
-        run: |
-          echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
-
-      - name: Install GitHub CLI
-        run: |
-          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 || true
-          sudo apt-add-repository https://cli.github.com/packages -y
-          sudo apt-get update
-          sudo apt-get install gh -y
 
       - name: Authenticate GitHub CLI
-        run: gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+        run: gh auth setup-git && gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Extract last merged PR to develop (text only, no images/videos)
         id: release_notes
         run: |
-          # Get the latest merged PR into develop
           PR_JSON=$(gh pr list --base develop --state merged --limit 1 --json title,body)
-
-          # Extract title and body
+          
           TITLE=$(echo "$PR_JSON" | jq -r '.[0].title')
           BODY=$(echo "$PR_JSON" | jq -r '.[0].body')
-
-          # Remove markdown images and HTML media tags
+          
           CLEAN_BODY=$(echo "$BODY" | sed -E 's/!\[[^]]*\]\([^)]*\)//g' | sed -E 's/<img[^>]*>//g' | sed -E 's/<video[^>]*>.*<\/video>//g')
-
-          # Combine and truncate
+          
           RELEASE_NOTES="${TITLE}\n\n${CLEAN_BODY}"
           echo -e "$RELEASE_NOTES" | head -c 1000 > release_notes.txt
-
-          # Output for use in other steps
+          
           echo "notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
           echo "Release notes:"
           echo "$RELEASE_NOTES"
+      
 
       - name: Build signed release APK
         run: ./gradlew assembleRelease
