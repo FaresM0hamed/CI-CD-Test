@@ -22,9 +22,33 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      - name: Decode and recreate google-services.json
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > app/google-services.json
 
-      - name: Set up GitHub CLI
-        uses: cli/cli-action@v1
+      - name: Create secrets.properties file
+        run: |
+          echo "API_KEY=\"${{ secrets.API_KEY }}\"" > app/secrets.properties
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
+
+      - name: Set environment variables for signing
+        run: |
+          echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 || true
+          sudo apt-add-repository https://cli.github.com/packages -y
+          sudo apt-get update
+          sudo apt-get install gh -y
+
+      - name: Authenticate GitHub CLI
+        run: gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Extract last merged PR to develop (text only, no images/videos)
         id: release_notes
@@ -36,7 +60,7 @@ jobs:
           TITLE=$(echo "$PR_JSON" | jq -r '.[0].title')
           BODY=$(echo "$PR_JSON" | jq -r '.[0].body')
 
-          # Remove markdown images ![alt](url) and HTML image/video tags
+          # Remove markdown images and HTML media tags
           CLEAN_BODY=$(echo "$BODY" | sed -E 's/!\[[^]]*\]\([^)]*\)//g' | sed -E 's/<img[^>]*>//g' | sed -E 's/<video[^>]*>.*<\/video>//g')
 
           # Combine and truncate
