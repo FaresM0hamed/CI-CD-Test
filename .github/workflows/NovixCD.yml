@@ -75,5 +75,5 @@ jobs:
             app/build/outputs/apk/release/app-release.apk \
             --app ${{ secrets.FIREBASE_APP_ID }} \
             --token ${{ secrets.FIREBASE_AUTH_TOKEN }} \
-            --groups "QA Team" \
+            --groups "qa-team" \
             --release-notes-file release_notes.txt
