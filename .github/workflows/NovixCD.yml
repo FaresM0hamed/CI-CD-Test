@@ -24,24 +24,26 @@ jobs:
 
 
       - name: Authenticate GitHub CLI
-        run: gh auth setup-git && gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token --hostname github.com
 
       - name: Extract last merged PR to develop (text only, no images/videos)
         id: release_notes
         run: |
           PR_JSON=$(gh pr list --base develop --state merged --limit 1 --json title,body)
-          
+
           TITLE=$(echo "$PR_JSON" | jq -r '.[0].title')
           BODY=$(echo "$PR_JSON" | jq -r '.[0].body')
-          
+
           CLEAN_BODY=$(echo "$BODY" | sed -E 's/!\[[^]]*\]\([^)]*\)//g' | sed -E 's/<img[^>]*>//g' | sed -E 's/<video[^>]*>.*<\/video>//g')
-          
+
           RELEASE_NOTES="${TITLE}\n\n${CLEAN_BODY}"
           echo -e "$RELEASE_NOTES" | head -c 1000 > release_notes.txt
-          
+
           echo "notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
           echo "Release notes:"
           echo "$RELEASE_NOTES"
+      
       
 
       - name: Build signed release APK
