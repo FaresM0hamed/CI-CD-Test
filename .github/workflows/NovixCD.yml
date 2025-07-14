@@ -5,6 +5,9 @@ on:
     branches:
       - develop
 
+permissions:
+  contents: write  # Required to commit and push version changes
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -22,6 +25,38 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      - name: Bump version name and code
+        id: versioning
+        run: |
+          VERSION_FILE="app/version.properties"
+
+          # Read current version values
+          VERSION_NAME=$(grep VERSION_NAME $VERSION_FILE | cut -d'=' -f2)
+          VERSION_CODE=$(grep VERSION_CODE $VERSION_FILE | cut -d'=' -f2)
+
+          # Parse and bump patch version
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
+          PATCH=$((PATCH + 1))
+
+          NEW_VERSION_NAME="${MAJOR}.${MINOR}.${PATCH}"
+          NEW_VERSION_CODE=$((VERSION_CODE + 1))
+
+          # Update version.properties
+          sed -i "s/VERSION_NAME=$VERSION_NAME/VERSION_NAME=$NEW_VERSION_NAME/" $VERSION_FILE
+          sed -i "s/VERSION_CODE=$VERSION_CODE/VERSION_CODE=$NEW_VERSION_CODE/" $VERSION_FILE
+
+          echo "✅ Bumped version to $NEW_VERSION_NAME ($NEW_VERSION_CODE)"
+
+          # Output for later use
+          echo "versionName=$NEW_VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "versionCode=$NEW_VERSION_CODE" >> $GITHUB_OUTPUT
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add $VERSION_FILE
+          git commit -m "CI: Bump version to $NEW_VERSION_NAME ($NEW_VERSION_CODE)"
+          git push
+
       - name: Authenticate GitHub CLI
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token --hostname github.com
@@ -32,38 +67,36 @@ jobs:
           COMMIT_SHA="${{ github.sha }}"
           echo "🔍 Looking for PR with merge commit: $COMMIT_SHA"
           
-          # Fetch the latest merged PRs to 'develop' with merge commit info
           PR_JSON=$(gh pr list --base develop --state merged --json title,body,mergeCommit --jq \
             ".[] | select(.mergeCommit.oid == \"$COMMIT_SHA\")")
           
           if [ -z "$PR_JSON" ]; then
-            echo "❌ No PR found with merge commit $COMMIT_SHA"
+            echo "No PR found with merge commit $COMMIT_SHA"
             echo "notes=No matching PR found." >> $GITHUB_OUTPUT
             exit 1
           fi
           
           TITLE=$(echo "$PR_JSON" | jq -r '.title // "No title"')
           BODY=$(echo "$PR_JSON" | jq -r '.body // "No description"')
-          
-          # Clean markdown content (images, videos, etc.)
+
           CLEAN_BODY=$(echo "$BODY" | \
             sed -E 's/!\[[^]]*\]\([^)]*\)//g' | \
             sed -E 's/<img[^>]*>//g' | \
             sed -E 's/<video[^>]*>.*<\/video>//g' | \
             tr -d '\r' | \
             sed 's/[[:cntrl:]]//g')
-          
+
           RELEASE_NOTES="${TITLE}\n\n${CLEAN_BODY}"
-          
+
           echo -e "$RELEASE_NOTES" | head -c 1000 > release_notes.txt
-          
+
           {
             echo "notes<<EOF"
             echo -e "$RELEASE_NOTES" | head -c 500
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
-          echo "Release notes created:"
+          echo "📦 Release notes created:"
           cat release_notes.txt
 
       - name: Build signed release APK
@@ -76,7 +109,7 @@ jobs:
         run: |
           npm install -g firebase-tools
           firebase appdistribution:distribute \
-            app/build/outputs/apk/release/app-release-unsigned.apk \
+            app/build/outputs/apk/release/app-release.apk \
             --app "$FIREBASE_APP_ID" \
             --token "$FIREBASE_AUTH_TOKEN" \
             --groups "qa-team" \

@@ -8,27 +8,31 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
 }
+//
+//// Load version properties
+//val versionPropsFile = rootProject.file("version.properties")
+//val versionProps = Properties()
+//
+//if (versionPropsFile.exists()) {
+//    versionProps.load(FileInputStream(versionPropsFile))
+//}
+//
+//val versionMajor = versionProps["versionMajor"].toString().toInt()
+//val versionMinor = versionProps["versionMinor"].toString().toInt()
+//val versionPatch = versionProps["versionPatch"].toString().toInt()
+//
+//fun generateVersionCode(): Int {
+//    return 26 * 10000000 + versionMajor * 10000 + versionMinor * 100 + versionPatch
+//}
+//
+//fun generateVersionName(): String {
+//    return "$versionMajor.$versionMinor.$versionPatch"
+//}
 
-// Load version properties
-val versionPropsFile = rootProject.file("version.properties")
-val versionProps = Properties()
-
-if (versionPropsFile.exists()) {
-    versionProps.load(FileInputStream(versionPropsFile))
+val versionPropsFile = rootProject.file("app/version.properties")
+val versionProps = Properties().apply {
+    load(versionPropsFile.inputStream())
 }
-
-val versionMajor = versionProps["versionMajor"].toString().toInt()
-val versionMinor = versionProps["versionMinor"].toString().toInt()
-val versionPatch = versionProps["versionPatch"].toString().toInt()
-
-fun generateVersionCode(): Int {
-    return 26 * 10000000 + versionMajor * 10000 + versionMinor * 100 + versionPatch
-}
-
-fun generateVersionName(): String {
-    return "$versionMajor.$versionMinor.$versionPatch"
-}
-
 android {
     namespace = "com.devfares.cicdtests"
     compileSdk = 35
@@ -37,8 +41,8 @@ android {
         applicationId = "com.devfares.cicdtests"
         minSdk = 28
         targetSdk = 35
-        versionCode = generateVersionCode()
-        versionName = generateVersionName()
+        versionName = versionProps.getProperty("VERSION_NAME") ?: "1.0.0"
+        versionCode = versionProps.getProperty("VERSION_CODE")?.toIntOrNull() ?: 1
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
