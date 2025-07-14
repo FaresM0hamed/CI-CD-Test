@@ -6,7 +6,7 @@ on:
       - develop
 
 permissions:
-  contents: write  # Needed to push version.properties changes
+  contents: write
 
 jobs:
   deploy:
