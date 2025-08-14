@@ -29,10 +29,16 @@ plugins {
 //    return "$versionMajor.$versionMinor.$versionPatch"
 //}
 
-val versionPropsFile = rootProject.file("app/version.properties")
-val versionProps = Properties().apply {
-    load(versionPropsFile.inputStream())
-}
+//val versionPropsFile = rootProject.file("app/version.properties")
+//val versionProps = Properties().apply {
+//    load(versionPropsFile.inputStream())
+//}
+//
+//val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+//val formattedDate = "%02d %02d:%02d".format(
+//    now.dayOfMonth, now.hour, now.minute
+//)
+
 android {
     namespace = "com.devfares.cicdtests"
     compileSdk = 35
@@ -41,8 +47,8 @@ android {
         applicationId = "com.devfares.cicdtests"
         minSdk = 28
         targetSdk = 35
-        versionName = versionProps.getProperty("VERSION_NAME") ?: "1.0.0"
-        versionCode = versionProps.getProperty("VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = "1.0"
+        versionCode = 1
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -66,6 +72,16 @@ android {
     buildFeatures {
         compose = true
     }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = false
+        }
+    }
+
 }
 
 dependencies {
