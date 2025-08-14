@@ -38,7 +38,10 @@ jobs:
 
       #     NEW_VERSION_NAME="${MAJOR}.${MINOR}.${PATCH}"
 
+
       #     echo "Bumping versionName: $VERSION_NAME → $NEW_VERSION_NAME"
+
+      #     echo "✅ Bumping versionName: $VERSION_NAME → $NEW_VERSION_NAME"
 
       #     # Update version.properties (in-place)
       #     sed -i "s/VERSION_NAME=$VERSION_NAME/VERSION_NAME=$NEW_VERSION_NAME/" $VERSION_FILE
