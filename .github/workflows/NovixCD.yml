@@ -25,25 +25,25 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Bump versionName only (no commit yet)
-        id: versioning
-        run: |
-          VERSION_FILE="app/version.properties"
+      # - name: Bump versionName only (no commit yet)
+      #   id: versioning
+      #   run: |
+      #     VERSION_FILE="app/version.properties"
 
-          # Read current version name
-          VERSION_NAME=$(grep VERSION_NAME $VERSION_FILE | cut -d'=' -f2)
+      #     # Read current version name
+      #     VERSION_NAME=$(grep VERSION_NAME $VERSION_FILE | cut -d'=' -f2)
 
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
-          PATCH=$((PATCH + 1))
+      #     IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
+      #     PATCH=$((PATCH + 1))
 
-          NEW_VERSION_NAME="${MAJOR}.${MINOR}.${PATCH}"
+      #     NEW_VERSION_NAME="${MAJOR}.${MINOR}.${PATCH}"
 
-          echo "✅ Bumping versionName: $VERSION_NAME → $NEW_VERSION_NAME"
+      #     echo "✅ Bumping versionName: $VERSION_NAME → $NEW_VERSION_NAME"
 
-          # Update version.properties (in-place)
-          sed -i "s/VERSION_NAME=$VERSION_NAME/VERSION_NAME=$NEW_VERSION_NAME/" $VERSION_FILE
+      #     # Update version.properties (in-place)
+      #     sed -i "s/VERSION_NAME=$VERSION_NAME/VERSION_NAME=$NEW_VERSION_NAME/" $VERSION_FILE
 
-          echo "versionName=$NEW_VERSION_NAME" >> $GITHUB_OUTPUT
+      #     echo "versionName=$NEW_VERSION_NAME" >> $GITHUB_OUTPUT
 
       - name: Authenticate GitHub CLI
         run: |
